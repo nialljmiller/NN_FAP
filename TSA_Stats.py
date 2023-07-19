@@ -2,7 +2,6 @@ import ctypes, os, sys
 import math as maths
 import random
 
-
 import numpy as np;np.set_printoptions(suppress=True)
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -103,6 +102,19 @@ def create_model(input_length):
 	return model
 
 
+def phaser(time, period):
+	# this is to mitigate against div 0
+	if period == 0:
+		period = 1 
+	phase = np.array(time) * 0.0
+	for i in range(0, len(time)):
+		 phase[i] = (time[i])/period - np.floor((time[i])/period)
+		 if (phase[i] >= 1):
+		   phase[i] = phase[i]-1.
+		 if (phase[i] <= 0):
+		   phase[i] = phase[i]+1.
+	return phase
+
 def gen_chan(mag, phase, knn, N):
 
 	asort  = np.argsort(phase)
@@ -130,23 +142,41 @@ def data_append(mag, phase, knn, N, x_list, y_list, mod):
 	x_list.append(gen_chan(mag, phase, knn, N))
 	y_list.append(mod)
 
-def inference(period, mag, time, knn, model, TOOL, N = 200):
-	if period == 0 or period == 9999:
-		return 1
-	else:
 
-		if len(mag) < N:
-			clip_pad = 1
-			mag = np.pad(mag, (0,int((N - len(mag)))), 'wrap')
-			time = np.pad(time, (0,int((N - len(time)))), 'wrap')
-		else:
-			clip_pad = 0
-			mag, mag_shite, time = delete_rand_items(mag, mag, time, len(mag)-N)
+def get_model(model_path = '/beegfs/car/njm/models/final_12l_dp_all/'):
+    #model_path = '/beegfs/car/njm/models/final_better/'
+    print("Opening model from here :", model_path)
+    json_file = open(model_path+'_model.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights(model_path+"_model.h5")
+    history=np.load(model_path+'_model_history.npy',allow_pickle='TRUE').item()
+    model = loaded_model
+    N = 200
+    knn_N = int(N / 20)
+    knn = neighbors.KNeighborsRegressor(knn_N, weights='distance')
+    return knn, model
 
-		phase = TOOL.phaser(time, period)
-		mag = norm_data(mag)
-		FAP = model.predict(np.array([gen_chan(mag, phase, knn, N)]))
-		return FAP[0][0]
+
+
+def inference(period, mag, time, knn = None, model = None, N = 200):
+    if knn == None or model == None:
+        knn, model = get_model()
+
+    if len(mag) < N:
+        clip_pad = 1
+        mag = np.pad(mag, (0,int((N - len(mag)))), 'wrap')
+        time = np.pad(time, (0,int((N - len(time)))), 'wrap')
+    else:
+        clip_pad = 0
+        mag, mag_shite, time = delete_rand_items(mag, mag, time, len(mag)-N)
+
+    phase = phaser(time, period)
+    mag = norm_data(mag)
+    FAP = model.predict(np.array([gen_chan(mag, phase, knn, N)]))
+    return FAP[0][0]
 
 def running_scatter(x,y,N):
 	rn = []
