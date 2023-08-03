@@ -107,7 +107,7 @@ knn = neighbors.KNeighborsRegressor(knn_N, weights='distance')
 FAP = NN_FAP.inference(period_guess, mag, time, knn=knn, model=loaded_model)
 
 print(f"False Alarm Probability: {FAP}")
-'''
+```
 
 
 If you want to customize the behavior, you can provide your own pre-trained model and k-Nearest Neighbors (KNN) classifier using the optional parameters `model` and `knn`. If not provided, the function will use the default model and KNN classifier.
