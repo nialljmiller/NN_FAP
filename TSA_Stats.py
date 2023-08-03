@@ -120,10 +120,14 @@ def gen_chan(mag, phase, knn, N):
 	asort  = np.argsort(phase)
 	mag = mag[asort]
 	phase = phase[asort]
-	
+	#print(mag, phase)		
+	# Remove NaN values from 'mag' and 'phase'
+	mask = ~np.isnan(mag) & ~np.isnan(phase)
+	mag = mag[mask]
+	phase = phase[mask]
+	#print(mag, phase)
 	knn_m = knn.fit(phase[:, np.newaxis], mag).predict(np.linspace(0,1, num = N)[:, np.newaxis])
 	rn = running_scatter(phase,mag,N)
-	
 	delta_phase = []
 	prev = 0
 	for p in phase:
