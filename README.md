@@ -8,12 +8,6 @@
 
 NN_FAP is a Python package designed to provide a simple and efficient way to verify the periodicity present in time-series astronomical data using a machine learning-based technique. This package utilizes a Recurrant Neural Network (RNN) to calculate the False Alarm Probability (FAP) directly from the phase-folded light curve. This method can be seen as a RNN approach to PDM & Conditional Entropy. We are searching for any "signal" in the phase folded light curve (or any x,y data...)
 
-## Features
-
-- Automatic verification of periodicity in astronomical time-series data.
-- Machine learning-based approach for improved robustness and accuracy.
-- Efficient handling of large datasets.
-- Easy-to-use interface for quick inference.
 
 ## Installation
 
@@ -110,11 +104,11 @@ print(f"False Alarm Probability: {FAP}")
 ```
 
 
-If you want to customize the behavior, you can provide your own pre-trained model and k-Nearest Neighbors (KNN) classifier using the optional parameters `model` and `knn`. If not provided, the function will use the default model and KNN classifier.
+You can provide your own pre-trained model and k-Nearest Neighbors (KNN) classifier using the optional parameters `model` and `knn`. If not provided, the function will use the default model and KNN classifier.
 
 ## Documentation
 
-For detailed usage instructions, examples, and API reference, please refer to the [documentation](https://nn-fap.readthedocs.io/en/latest/).
+%For detailed usage instructions, examples, and API reference, please refer to the [documentation](https://nn-fap.readthedocs.io/en/latest/).
 
 ## Citation
 
@@ -132,4 +126,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Thank you for considering using `NN_FAP` for your periodicity verification needs in astronomical time-series data. We hope this package proves valuable in your research and analyses. If you encounter any problems or have questions, don't hesitate to reach out to us or open an issue on GitHub.
