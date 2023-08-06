@@ -1,5 +1,5 @@
 import ctypes, os, sys
-import math as maths
+
 import random
 
 import numpy as np;np.set_printoptions(suppress=True)
@@ -853,7 +853,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 
 
 def LC_inference(TOOL, model = None, model_path = None,  N = 200):
-	round_to_n = lambda x, n: x if x == 0 else round(x, -int(maths.floor(maths.log10(np.abs(x)))) + (n - 1))
+	round_to_n = lambda x, n: x if x == 0 else round(x, -int(np.floor(np.log10(np.abs(x)))) + (n - 1))
 	if model == None:
 		if model_path == None:
 			model_path = '/beegfs/car/njm/models/final_12l_dp_all/'

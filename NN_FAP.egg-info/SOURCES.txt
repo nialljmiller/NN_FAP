@@ -1,0 +1,7 @@
+README.md
+setup.py
+NN_FAP.egg-info/PKG-INFO
+NN_FAP.egg-info/SOURCES.txt
+NN_FAP.egg-info/dependency_links.txt
+NN_FAP.egg-info/requires.txt
+NN_FAP.egg-info/top_level.txt
