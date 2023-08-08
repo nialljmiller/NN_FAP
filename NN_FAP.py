@@ -139,18 +139,18 @@ def get_model(model_path = '/beegfs/car/njm/models/final_12l_dp_all/'):
 
 
 
+
 def inference(period, mag, time, knn = None, model = None, N = 200):
     if knn == None or model == None:
         knn, model = get_model()
 
     if len(mag) < N:
         clip_pad = 1
-        pad_length = N - len(mag)
-        mag = np.concatenate((mag, mag[:pad_length]))
-        time = np.concatenate((time, time[:pad_length]))
+        mag = np.pad(mag, (0,int((N - len(mag)))), 'wrap')
+        time = np.pad(time, (0,int((N - len(time)))), 'wrap')
     else:
         clip_pad = 0
-        mag, mag_shite, time = delete_rand_items(mag, mag, time, len(mag) - N)
+        mag, mag_shite, time = delete_rand_items(mag, mag, time, len(mag)-N)
 
     phase = phaser(time, period)
     mag = norm_data(mag)
