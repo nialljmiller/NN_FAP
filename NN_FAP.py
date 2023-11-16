@@ -11,18 +11,12 @@ from tensorflow.keras.models import model_from_json
 from tensorflow.keras.callbacks import EarlyStopping, LearningRateScheduler
 from tensorflow.keras.optimizers import Adam
 from sklearn import neighbors
-#from sklearn.neighbors import NearestNeighbors
-image_dpi = 175
+
 from tqdm import tqdm
 import glob
 from datetime import datetime
 
-#import Virac as Virac
-
-try:
-	import multiprocessing as processing
-except:
-	import processing
+image_dpi = 175
 
 
 
@@ -40,6 +34,8 @@ def hyper_params():
 	model_path = model_parent_dir + '/New_data/'
 	big_plot_IO = -100
 	return epochs,batch_size,validation_split,synth,N,samps,load_model_flag,make_data,retrain,model_parent_dir,model_path,big_plot_IO
+
+
 
 
 def create_model(input_length):
@@ -62,6 +58,8 @@ def create_model(input_length):
 	return model
 
 
+
+
 def phaser(time, period):
 	# this is to mitigate against div 0
 	if period == 0:
@@ -75,17 +73,17 @@ def phaser(time, period):
 		   phase[i] = phase[i]+1.
 	return phase
 
-def gen_chan(mag, phase, knn, N):
 
+
+
+def gen_chan(mag, phase, knn, N):
 	asort  = np.argsort(phase)
 	mag = mag[asort]
 	phase = phase[asort]
-	#print(mag, phase)		
 	# Remove NaN values from 'mag' and 'phase'
 	mask = ~np.isnan(mag) & ~np.isnan(phase)
 	mag = mag[mask]
 	phase = phase[mask]
-	#print(mag, phase)
 	knn_m = knn.fit(phase[:, np.newaxis], mag).predict(np.linspace(0,1, num = N)[:, np.newaxis])
 	rn = running_scatter(phase,mag,N)
 	delta_phase = []
@@ -95,11 +93,6 @@ def gen_chan(mag, phase, knn, N):
 		prev = p
 
 	return np.vstack((mag, knn_m, rn, phase, smooth(knn_m,int(N/20)), smooth(knn_m,int(N/5)), delta_phase))
-	#return np.vstack((mag, smooth(knn_m,int(N/20)), rn, phase, delta_phase))
-	#return np.vstack((mag, smooth(knn_m,int(N/5)), rn, phase, delta_phase))
-	#return np.vstack((mag, knn_m, rn, phase, delta_phase))
-	#return np.vstack((mag, rn, delta_phase, phase))
-
 
 	
 def data_append(mag, phase, knn, N, x_list, y_list, mod):
@@ -107,7 +100,7 @@ def data_append(mag, phase, knn, N, x_list, y_list, mod):
 	y_list.append(mod)
 
 
-def get_model(model_path = '/beegfs/car/njm/models/final_12l_dp_all/'):
+def get_model(model_path = ''):
     print("Opening model from here :", model_path)
     json_file = open(model_path+'_model.json', 'r')
     loaded_model_json = json_file.read()
@@ -759,7 +752,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 
 			if retrain == 1 or load_model_flag == 0:
 
-				history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split = validation_split, verbose = 1, shuffle = True, workers = 100, use_multiprocessing = True, callbacks=[es, lrate])
+				history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split = validation_split, verbose = 1, shuffle = True, workers = 100, callbacks=[es, lrate])
 				history = history.history
 
 
