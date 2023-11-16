@@ -1,24 +1,15 @@
 import ctypes, os, sys
-
 import random
-
 import numpy as np;np.set_printoptions(suppress=True)
-from scipy import stats
+
 import matplotlib.pyplot as plt
 
 #from tensorflow import keras 
-from tensorflow.keras.layers import Input, Dense, Dropout, LSTM, Embedding, GRU, BatchNormalization
-#import tensorflow_addons as tfa
-#import tfanightly as tfa
-
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.layers import Input, Dense, GRU
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.models import model_from_json
-from tensorflow.python.client import device_lib
 from tensorflow.keras.callbacks import EarlyStopping, LearningRateScheduler
 from tensorflow.keras.optimizers import Adam
-from sklearn.neighbors import KDTree 
-from sklearn.neighbors import BallTree 
 from sklearn import neighbors
 #from sklearn.neighbors import NearestNeighbors
 image_dpi = 175
@@ -26,7 +17,7 @@ from tqdm import tqdm
 import glob
 from datetime import datetime
 
-import Virac as Virac
+#import Virac as Virac
 
 try:
 	import multiprocessing as processing
@@ -55,20 +46,15 @@ def create_model(input_length):
 	RNN_Nodes = 1024
 	RNN_layers = 12
 	model = Sequential()
-	#model.add(GRU(RNN_Nodes, activation='tanh', recurrent_activation='sigmoid', return_sequences=True, input_shape = input_length))
 	model.add(GRU(RNN_Nodes, activation='tanh', recurrent_activation='sigmoid', return_sequences=True))#, input_shape = input_length))
 
 	for i in range(RNN_layers):
 		model.add(GRU(RNN_Nodes, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=True))
 	
 	model.add(GRU(RNN_Nodes, activation='tanh', recurrent_activation='hard_sigmoid'))
-	#model.add(BatchNormalization())
-	#model.add(Dropout(0.5))
 	model.add(Dense(1, activation='sigmoid'))
-	#'''
 	print ('Compiling...')
 	opt = Adam(learning_rate=0.000001)
-	#opt = Adam()
 	model.compile(loss='binary_crossentropy',
 		  optimizer=opt,
 		  metrics=['accuracy'])
@@ -122,7 +108,6 @@ def data_append(mag, phase, knn, N, x_list, y_list, mod):
 
 
 def get_model(model_path = '/beegfs/car/njm/models/final_12l_dp_all/'):
-    #model_path = '/beegfs/car/njm/models/final_better/'
     print("Opening model from here :", model_path)
     json_file = open(model_path+'_model.json', 'r')
     loaded_model_json = json_file.read()
@@ -185,22 +170,14 @@ def smooth(y, box_pts):
 def norm_data(data):
 	return (data - np.min(data)) / (np.max(data) - np.min(data))
 
+
 def delete_rand_items(mag, magerr, time, n):
-	randomlist = random.sample(range(0, len(mag)), n)
-	mag = np.array([x for i,x in enumerate(mag) if i not in randomlist])
-	magerr = np.array([x for i,x in enumerate(magerr) if i not in randomlist])
-	time = np.array([x for i,x in enumerate(time) if i not in randomlist])
-	return mag, magerr, time
+    random_indices = np.random.choice(len(mag), n, replace=False)
+    return np.delete(mag, random_indices), np.delete(magerr, random_indices), np.delete(time, random_indices)
 
 def delete_rand_items_phase(mag, magerr, time, phase, n):
-	randomlist = random.sample(range(0, len(mag)), n)
-	mag = np.array([x for i,x in enumerate(mag) if i not in randomlist])
-	magerr = np.array([x for i,x in enumerate(magerr) if i not in randomlist])
-	time = np.array([x for i,x in enumerate(time) if i not in randomlist])
-	phase = np.array([x for i,x in enumerate(phase) if i not in randomlist])
-	return mag, magerr, time, phase
-
-
+    random_indices = np.random.choice(len(mag), n, replace=False)
+    return np.delete(mag, random_indices), np.delete(magerr, random_indices), np.delete(time, random_indices), np.delete(phase, random_indices)
 
 ###########################################################
 #  _	 _	   _	 _		 ____					 #
@@ -298,16 +275,16 @@ def LC_train(TOOL, method= 'PDM', N=200):
 			if cat_type == None:
 				cat_type = 'Real'
 			if mod == 1:
-				if random.uniform(0,100) < 10: 
+				if np.random.uniform(0,100) < 10: 
 					med_mag = np.median(mag)
 					new_mag = []
-					if random.uniform(0,100) > 90: 
+					if np.random.uniform(0,100) > 90: 
 						med_magerr = np.median(magerr)
 						q75, q25 = np.percentile(mag, [75, 25])				
 						scatter = abs(q75-q25)/2
 						cat_type = "Binary_Error_" + cat_type
-						prange = random.choice(TOOL.exclusion_periods)
-						period = random.uniform(prange[0],prange[1])
+						prange = np.random.choice(TOOL.exclusion_periods)
+						period = np.random.uniform(prange[0],prange[1])
 						phase = TOOL.phaser(time, period)	
 						asort  = np.argsort(phase)
 						mag = mag[asort]
@@ -316,40 +293,40 @@ def LC_train(TOOL, method= 'PDM', N=200):
 
 						mag = ((mag - np.min(mag))/(2*np.max(mag)))+np.min(mag) #normalise so amplitude is 0.5 nomatter what, stops binary from going wild
 												
-						minplus = random.choice([-1,1])
+						minplus = np.random.choice([-1,1])
 						for i, m in enumerate(mag):
 							mm = abs(m - med_mag)
 							if phase[i] > 0.5:
-								mm = mm + (scatter * minplus) + random.uniform(med_magerr,3*med_magerr) *0.5
+								mm = mm + (scatter * minplus) + np.random.uniform(med_magerr,3*med_magerr) *0.5
 							else:
-								mm = mm - (scatter * minplus) + random.uniform(med_magerr,3*med_magerr) *0.5
+								mm = mm - (scatter * minplus) + np.random.uniform(med_magerr,3*med_magerr) *0.5
 							new_mag.append(abs(mm+med_mag))
 						mag = new_mag
-						period = period + (period * random.uniform(-0.1,0.1))
+						period = period + (period * np.random.uniform(-0.1,0.1))
 					else:
 						cat_type = "High_Scatter_Error_" + cat_type
 						for i, m in enumerate(mag):
-							new_mag.append(m + random.choice([random.choice([random.uniform(-2,-0.1),random.uniform(0.1,2)]),random.choice([random.gauss(-1,-0.5),random.gauss(1,0.5)])]))
+							new_mag.append(m + np.random.choice([np.random.choice([np.random.uniform(-2,-0.1),np.random.uniform(0.1,2)]),np.random.choice([np.random.gauss(-1,-0.5),np.random.gauss(1,0.5)])]))
 						time = time + (np.random.uniform(0.005,0.015, len(mag)))
 						mag = new_mag + np.random.normal(0, magerr*2, len(new_mag))
-					if random.uniform(0,100) > 60: 
-							prange = random.choice(TOOL.exclusion_periods)
-							period = random.uniform(prange[0],prange[1])
+					if np.random.uniform(0,100) > 60: 
+							prange = np.random.choice(TOOL.exclusion_periods)
+							period = np.random.uniform(prange[0],prange[1])
 
 
 				else:
-					if random.uniform(0,100) < 50: 
-						prange = random.choice(TOOL.exclusion_periods)
+					if np.random.uniform(0,100) < 50: 
+						prange = np.random.choice(TOOL.exclusion_periods)
 						flag = False
 						while flag == False:
 							if period - (0.1 * period)> prange[0] and period +  (0.1 * period) < prange[1]:
-								prange = random.choice(TOOL.exclusion_periods)
+								prange = np.random.choice(TOOL.exclusion_periods)
 							else:
 								flag = True
-						period = random.uniform(prange[0],prange[1])
+						period = np.random.uniform(prange[0],prange[1])
 					else:
-						period = (period * random.uniform(0.3,3) + random.uniform(0.001*np.pi*period,np.pi*period)) * random.uniform(0.977777777777777777, 1.3333333333333333333333)
-						random.shuffle(mag)
+						period = (period * np.random.uniform(0.3,3) + np.random.uniform(0.001*np.pi*period,np.pi*period)) * np.random.uniform(0.977777777777777777, 1.3333333333333333333333)
+						np.random.shuffle(mag)
 						time = time + (np.random.uniform(0.005,0.015, len(mag)))*0.1
 
 			time = np.squeeze(time)
@@ -377,18 +354,18 @@ def LC_train(TOOL, method= 'PDM', N=200):
 				print(timee)
 				exit()
 
-			phase2 = TOOL.phaser(time, period + (0.00001 * period * random.choice([-1,1]) * np.random.uniform(0,1)))
+			phase2 = TOOL.phaser(time, period + (0.00001 * period * np.random.choice([-1,1]) * np.random.uniform(0,1)))
 
 			phase3 = TOOL.phaser(time, period/2)
 
-			phase4 = TOOL.phaser(time, period + (0.00001 * period * random.choice([-1,1]) * np.random.uniform(0,1)))
+			phase4 = TOOL.phaser(time, period + (0.00001 * period * np.random.choice([-1,1]) * np.random.uniform(0,1)))
 
 			if 'EB' in cat_type or 'CV' in cat_type:
 					phase4 = phase
 					phase3 = phase
 
 			if EB_mod == 1:
-				phase3 = TOOL.phaser(time, period + (0.00001 * period * random.choice([-1,1]) * np.random.uniform(0,1)))
+				phase3 = TOOL.phaser(time, period + (0.00001 * period * np.random.choice([-1,1]) * np.random.uniform(0,1)))
 
 			#NN NEEDS TO SEE DBOULE PERIOD ATLEAST, IT KEEPS REJECTING THEM
 			return mag, magerr, phase, phase2, phase3, phase4, cat_type, period, clip_pad
@@ -397,13 +374,13 @@ def LC_train(TOOL, method= 'PDM', N=200):
 
 
 	def phase_shift(phase, mod = 0):
-		phase = phase + (random.uniform(0.1,1)*random.choice([-1,1]))
+		phase = phase + (np.random.uniform(0.1,1)*np.random.choice([-1,1]))
 		phase_mask = np.where(phase > 1)[0]
 		phase[phase_mask] = phase[phase_mask] - 1
 		phase_mask = np.where(phase < 0)[0]
 		phase[phase_mask] = phase[phase_mask] + 1
 		if mod == 1:
-			#random.shuffle(phase)
+
 			pass
 		return phase
 
@@ -565,7 +542,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 		#================#
 		tier = "/beegfs/car/njm/Periodic_Variables/Best/Figures/Light_Curve/*.jpg"
 		files = glob.glob(tier)
-		random.shuffle(files)
+		np.random.shuffle(files)
 		files = files[:int(len(files)*0.1)]
 
 		print("Adding this many real periodics:",len(files))
@@ -596,7 +573,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 		synth_samples = 2000
 		tier = "/beegfs/car/njm/Periodic_Variables/Figures/Light_Curve/*.jpg"
 		files = glob.glob(tier)
-		random.shuffle(files)
+		np.random.shuffle(files)
 		files = files[:synth_samples]
 		print("Adding this many fake ebs:",len(files))
 		for fi in tqdm(files):
@@ -611,7 +588,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 		#===================#
 		tier = "/beegfs/car/njm/Periodic_Variables/Figures/Light_Curve/*.jpg"
 		files = glob.glob(tier)
-		random.shuffle(files)
+		np.random.shuffle(files)
 		files = files[:synth_samples]
 		print("Adding this many fake periodics:",len(files))
 		for fi in tqdm(files):
@@ -633,7 +610,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 		#================#
 		tier = "/beegfs/car/njm/Aperiodic_Variables/Figures/Light_Curve/*.csv"
 		files = glob.glob(tier)
-		random.shuffle(files)
+		np.random.shuffle(files)
 		files = files[:int(len(files)*0.01)]
 		print("Adding this many real aperiodics:",len(files))
 		for fi in tqdm(files):
@@ -665,7 +642,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 		synth_samples = periodics - aperiodics
 		tier = "/beegfs/car/njm/Aperiodic_Variables/Figures/Light_Curve/*.jpg"
 		files = glob.glob(tier)
-		random.shuffle(files)
+		np.random.shuffle(files)
 		files = files[:synth_samples]
 		print("Adding this many fake aperiodics:",len(files))
 		for fi in tqdm(files):
@@ -698,7 +675,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 			test_samples = 4000#int(len(SAMPLE_NAME)*0.01)
 			synth = 1
 			indexes = list(range(0,test_samples))
-			random.shuffle(indexes)
+			np.random.shuffle(indexes)
 			x_test = []; y_test = []
 			for ii in range(test_samples):
 				i = indexes[ii]
@@ -718,7 +695,7 @@ def LC_train(TOOL, method= 'PDM', N=200):
 			test_samples = 4000#int(len(SAMPLE_NAME)*0.01)
 			synth = 1
 			indexes = list(range(0,test_samples))
-			random.shuffle(indexes)
+			np.random.shuffle(indexes)
 			x_test = []; y_test = []
 			for ii in range(test_samples):
 				i = indexes[ii]
@@ -1000,16 +977,16 @@ def bigioplot(x_train, y_train, fp):
 	samples = len(y_train)/2
 	s10 = samples / 10
 
-	pos_1=abs(int((samples)/10) + int(random.uniform(-s10,+s10)))
-	pos_2=abs(int((samples)/9) + int(random.uniform(-s10,+s10)))
-	pos_3=abs(int((samples)/10)*2 + int(random.uniform(-s10,+s10)))
-	pos_4=abs(int((samples)/10)*3 + int(random.uniform(-s10,+s10)))
-	pos_5=abs(int((samples)/10)*4 + int(random.uniform(-s10,+s10)))
-	pos_6=abs(int((samples)/10)*5 + int(random.uniform(-s10,+s10)))
-	pos_7=abs(int((samples)/10)*6 + int(random.uniform(-s10,+s10)))
-	pos_8=abs(int((samples)/10)*7 + int(random.uniform(-s10,+s10)))
-	pos_9=abs(int((samples)/10)*8 + int(random.uniform(-s10,+s10)))
-	pos_10=abs(int((samples)/10)*9 + int(random.uniform(-s10,+s10)))
+	pos_1=abs(int((samples)/10) + int(np.random.uniform(-s10,+s10)))
+	pos_2=abs(int((samples)/9) + int(np.random.uniform(-s10,+s10)))
+	pos_3=abs(int((samples)/10)*2 + int(np.random.uniform(-s10,+s10)))
+	pos_4=abs(int((samples)/10)*3 + int(np.random.uniform(-s10,+s10)))
+	pos_5=abs(int((samples)/10)*4 + int(np.random.uniform(-s10,+s10)))
+	pos_6=abs(int((samples)/10)*5 + int(np.random.uniform(-s10,+s10)))
+	pos_7=abs(int((samples)/10)*6 + int(np.random.uniform(-s10,+s10)))
+	pos_8=abs(int((samples)/10)*7 + int(np.random.uniform(-s10,+s10)))
+	pos_9=abs(int((samples)/10)*8 + int(np.random.uniform(-s10,+s10)))
+	pos_10=abs(int((samples)/10)*9 + int(np.random.uniform(-s10,+s10)))
 
 	classes = np.unique(y_train)
 	a_per1 = x_train[np.where(np.array(y_train) == 1)[0][pos_1]]
