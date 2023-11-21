@@ -74,25 +74,40 @@ def phaser(time, period):
 	return phase
 
 
+def adjust_arrays(array1, array2, number):
+    while array1.size > number:
+        index = np.random.randint(0, array1.size)
+        array1 = np.delete(array1, index)
+        array2 = np.delete(array2, index)
+    
+    padding_length = number - array1.size
+    if padding_length > 0:
+        padding = np.zeros(padding_length)
+        array1 = np.concatenate((array1, padding))
+        array2 = np.concatenate((array2, padding))
+    
+    return array1, array2
 
 
 def gen_chan(mag, phase, knn, N):
-	asort  = np.argsort(phase)
-	mag = mag[asort]
-	phase = phase[asort]
-	# Remove NaN values from 'mag' and 'phase'
-	mask = ~np.isnan(mag) & ~np.isnan(phase)
-	mag = mag[mask]
-	phase = phase[mask]
-	knn_m = knn.fit(phase[:, np.newaxis], mag).predict(np.linspace(0,1, num = N)[:, np.newaxis])
-	rn = running_scatter(phase,mag,N)
-	delta_phase = []
-	prev = 0
-	for p in phase:
-		delta_phase.append(p - prev)
-		prev = p
+    mag, phase = adjust_arrays(mag, phase, N)
+    asort  = np.argsort(phase)
+    mag = mag[asort]
+    phase = phase[asort]
+    # Remove NaN values from 'mag' and 'phase'
+    mask = ~np.isnan(mag) & ~np.isnan(phase)
+    mag = mag[mask]
+    phase = phase[mask]
+    knn_m = knn.fit(phase[:, np.newaxis], mag).predict(np.linspace(0,1, num = N)[:, np.newaxis])
+    rn = running_scatter(phase,mag,N)
+    delta_phase = []
+    prev = 0
+    for p in phase:
+        delta_phase.append(p - prev)
+        prev = p
 
-	return np.vstack((mag, knn_m, rn, phase, smooth(knn_m,int(N/20)), smooth(knn_m,int(N/5)), delta_phase))
+    #print(len(mag), len(knn_m), len(rn), len(phase), len(smooth(knn_m,int(N/20))), len(smooth(knn_m,int(N/5))), len(delta_phase))
+    return np.vstack((mag, knn_m, rn, phase, smooth(knn_m,int(N/20)), smooth(knn_m,int(N/5)), delta_phase))
 
 	
 def data_append(mag, phase, knn, N, x_list, y_list, mod):
